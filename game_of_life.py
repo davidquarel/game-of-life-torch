@@ -2,15 +2,30 @@
 import plotly.graph_objects as go
 import torch
 import numpy as np
+import argparse
 
-HEIGHT, WIDTH = 16,16
-num_frames = 100  
-generations = torch.zeros((num_frames,HEIGHT, WIDTH), dtype=torch.int) 
-#generations[0] = torch.randint(4, (HEIGHT, WIDTH), dtype=torch.int) < 1 # Fill the tensor with 25% ones and 75% zeros
+parser = argparse.ArgumentParser(description='Game of Life')
+parser.add_argument('--height', type=int, default=64, help='Height of the world')
+parser.add_argument('--width', type=int, default=64, help='Width of the world')
+parser.add_argument('--seed', type=int, default=None, help='Seed for random initialization')
+parser.add_argument('--alive_fraction', type=float, default=0.2, help='Fraction of the world to initialize as alive')
+args = parser.parse_args()
 
-generations[0][:3, :3] = torch.tensor([[0, 1, 0], [0, 0, 1], [1, 1, 1]], dtype=torch.int) #glider
+HEIGHT = args.height
+WIDTH = args.width
+num_frames = 100
+generations = torch.zeros((num_frames, HEIGHT, WIDTH), dtype=torch.int)
 
-def next_generation(current_gen, wrap=True):
+if args.seed is not None:
+    torch.manual_seed(args.seed)
+    
+generations[0] = torch.rand((HEIGHT, WIDTH)) < args.alive_fraction
+
+#glider = torch.tensor([[0, 1, 0], [0, 0, 1], [1, 1, 1]], dtype=torch.int)
+#generations[0][:3, :3] = glider
+
+
+def next_generation(current_gen):
     """
     Calculates the next generation of the Game of Life based on the current generation.
 
@@ -23,12 +38,10 @@ def next_generation(current_gen, wrap=True):
     """
     base_height, base_width = current_gen.shape
     pad_height, pad_width = base_height + 2, base_width + 2
-    if wrap:
-        current_gen = current_gen.unsqueeze(0).unsqueeze(0)
-        padded_gen = torch.nn.functional.pad(current_gen, (1, 1, 1, 1), mode = 'circular')
-        padded_gen = padded_gen.squeeze()
-    else:
-        padded_gen = torch.nn.functional.pad(current_gen, (1, 1, 1, 1), value=0)
+    current_gen = current_gen.unsqueeze(0).unsqueeze(0)
+    padded_gen = torch.nn.functional.pad(current_gen, (1, 1, 1, 1), mode = 'circular')
+    padded_gen = padded_gen.squeeze()
+
         
     # could also just directly convolve with kernel [[1,1,1],[1,0,1],[1,1,1]
     # but for the sake of the exercise, only use torch.as_strided and torch.sum
