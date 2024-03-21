@@ -40,7 +40,8 @@ def next_generation(current_gen, wrap=True):
     neighbours = torch.as_strided(padded_gen, 
                                   size=(base_height, base_width, 3, 3), 
                                   stride=(pad_width, 1, pad_width, 1))
-    alive = neighbours.sum(dim=(-1,-2)) - current_gen
+    alive = neighbours.sum(dim=(-1,-2)) - current_gen 
+    #need to minus current_gen to not accidentally count the current cell in alive count
     
     alive_two, alive_three = alive==2 , alive==3
     alive_stay_alive = current_gen & (alive_two | alive_three)
