@@ -3,12 +3,12 @@ import plotly.graph_objects as go
 import torch
 import numpy as np
 
-HEIGHT, WIDTH = 256,256
+HEIGHT, WIDTH = 16,16
 num_frames = 100  
 generations = torch.zeros((num_frames,HEIGHT, WIDTH), dtype=torch.int) 
-generations[0] = torch.randint(4, (HEIGHT, WIDTH), dtype=torch.int) < 1 # Fill the tensor with 25% ones and 75% zeros
+#generations[0] = torch.randint(4, (HEIGHT, WIDTH), dtype=torch.int) < 1 # Fill the tensor with 25% ones and 75% zeros
 
-#generations[0][:3, :3] = torch.tensor([[0, 1, 0], [0, 0, 1], [1, 1, 1]], dtype=torch.int) #glider
+generations[0][:3, :3] = torch.tensor([[0, 1, 0], [0, 0, 1], [1, 1, 1]], dtype=torch.int) #glider
 
 def next_generation(current_gen, wrap=True):
     """
@@ -24,19 +24,14 @@ def next_generation(current_gen, wrap=True):
     base_height, base_width = current_gen.shape
     pad_height, pad_width = base_height + 2, base_width + 2
     if wrap:
-        padded_gen = torch.zeros((pad_height, pad_width), dtype=torch.int)
-        padded_gen[1:-1, 1:-1] = current_gen
-        padded_gen[0, 1:-1] = current_gen[-1] # top
-        padded_gen[-1, 1:-1] = current_gen[0] # bottom
-        padded_gen[1:-1, 0] = current_gen[:,-1] # left
-        padded_gen[1:-1, -1] = current_gen[:,0] # right
-        padded_gen[0, 0] = current_gen[-1,-1] # top left
-        padded_gen[0, -1] = current_gen[-1,0] # top right
-        padded_gen[-1, 0] = current_gen[0,-1] # bottom left
-        padded_gen[-1, -1] = current_gen[0,0] # bottom right
+        current_gen = current_gen.unsqueeze(0).unsqueeze(0)
+        padded_gen = torch.nn.functional.pad(current_gen, (1, 1, 1, 1), mode = 'circular')
+        padded_gen = padded_gen.squeeze()
     else:
         padded_gen = torch.nn.functional.pad(current_gen, (1, 1, 1, 1), value=0)
         
+    # could also just directly convolve with kernel [[1,1,1],[1,0,1],[1,1,1]
+    # but for the sake of the exercise, only use torch.as_strided and torch.sum
     neighbours = torch.as_strided(padded_gen, 
                                   size=(base_height, base_width, 3, 3), 
                                   stride=(pad_width, 1, pad_width, 1))
