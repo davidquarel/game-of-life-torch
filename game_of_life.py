@@ -42,8 +42,9 @@ def next_generation(current_gen, wrap=True):
                                   stride=(pad_width, 1, pad_width, 1))
     alive = neighbours.sum(dim=(-1,-2)) - current_gen
     
-    alive_stay_alive = current_gen & ((alive == 2) | (alive == 3))
-    dead_become_alive = (1-current_gen) & (alive == 3)
+    alive_two, alive_three = alive==2 , alive==3
+    alive_stay_alive = current_gen & (alive_two | alive_three)
+    dead_become_alive = (1-current_gen) & alive_three
     return alive_stay_alive | dead_become_alive
 
 for i in range(1, num_frames):
